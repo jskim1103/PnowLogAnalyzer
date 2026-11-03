@@ -24,21 +24,7 @@ A full-stack poker analytics project for parsing PokerNow hand histories, tracki
 
 Start with a headless, tested Python parser and domain model. Do **not** build the UI before validating game reconstruction and chip accounting.
 
-## Architecture
-
-```text
-PokerNow logs -> ingestion/parser -> normalized game model -> DuckDB
-                                      |                 |
-                              stats/probability <------+
-                                      |
-                                  FastAPI
-                                      |
-                               React dashboard
-```
-
-The PokerNow adapter must remain separate from the poker rules, statistical definitions, and probability implementations. Initial game support targets No-Limit Texas Hold'em; keep the schema extensible for PLO5 without pretending its hand evaluation is identical.
-
-## First milestone: trustworthy ingestion
+## First milestone: reliableingestion
 
 1. Inspect real PokerNow CSV samples (including unusual hands) before finalizing the parser.
 2. Create typed models for sessions, hands, players, seats, actions, streets, and payouts.
