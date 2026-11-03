@@ -218,3 +218,37 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# PnowLogAnalyzer: private hand histories and local data
+data/raw/
+data/private/
+data/*.duckdb
+data/*.duckdb.*
+*.duckdb
+*.duckdb.*
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+*.csv
+*.tsv
+*.parquet
+*.jsonl
+!tests/fixtures/*.csv
+!tests/fixtures/*.tsv
+!tests/fixtures/*.jsonl
+
+# Frontend/Node
+node_modules/
+frontend/dist/
+frontend/.vite/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.DS_Store
