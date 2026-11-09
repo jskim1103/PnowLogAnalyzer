@@ -3,21 +3,35 @@
 ## Phase 0 — Architecture and input discovery
 - [x] Select initial stack and separation of concerns.
 - [ ] Inspect one or more PokerNow logs and record the actual row/action grammar.
+  - Initial local export inspected: 188 hands, mixed PLO5/NLHE; CSV columns and
+    quoted player-reference grammar documented in `parser-contract.md`. Full
+    event grammar and reconciliation remain to be implemented.
 - [ ] Catalogue tricky examples: all-ins, showdown, incomplete hand, side pot, split pot, run-it-twice, player rename, seat movement, different stakes.
 - [ ] Agree on canonical player identity and duplicate-hand keys.
 
 ## Phase 1 — Ingestion and domain model
 - [ ] Typed session/hand/player/action/card/result model.
-- [ ] Streaming or batched import of multiple log files.
+  - Player IDs and observed name references implemented with synthetic tests.
+  - Strict CSV decoding retains file fingerprints and record/line provenance.
+- [x] Batched import of overlapping exports from one explicit session.
+  - Records merge by order with source provenance; conflicting contents fail.
+  - Persistent imports and multiple-session aggregation remain pending.
 - [ ] Deterministic hand-state reconstruction and chip accounting.
 - [ ] Validation, error reporting, and idempotent deduplication.
+  - Hand boundary checks, unknown-entry reporting, identity indexing, and
+    in-memory overlap deduplication implemented. Poker validation remains pending.
 - [ ] DuckDB persistence, synthetic fixtures, and automated tests.
-- [ ] CLI summary output.
+- [x] CLI summary output with player IDs/names, variants, boundary counts, issues,
+  and optional detailed JSON. Full poker validation is explicitly unavailable.
 
 **Exit criterion:** independently check sample-hand action sequences and pot/stack accounting; duplicate imports do not duplicate results.
 
 ## Phase 2 — Descriptive statistics
 - [ ] VPIP, PFR, limp, RFI, 3-bet and fold-to-3-bet.
+  - [x] Initial VPIP by player ID and variant, with eligible denominators,
+    sample sizes, explicit exclusions, synthetic tests, and CLI/JSON output.
+  - VPIP uses a provisional typed preflop adapter; full Hand reconstruction and
+    the other Phase 2 metrics remain pending.
 - [ ] Postflop actions, opportunities, c-bet, showdown stats.
 - [ ] Position/stack/starting-hand and time-window filters.
 - [ ] Win-rate and cumulative chip/profit reporting (stake aware).
