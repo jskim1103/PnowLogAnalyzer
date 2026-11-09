@@ -79,3 +79,32 @@ def test_vpip_conflicting_hand_identity_has_concise_error(tmp_path, capsys):
         writer.writerow(["-- ending hand #1 --", "2026-01-01T00:00:00Z", 5])
     assert main([str(path), "--session-id", "s", "--vpip"]) == 2
     assert "Duplicate hand" in capsys.readouterr().err
+
+
+def test_new_cli_reconstruction_metrics_and_persistence(tmp_path, capsys):
+    from test_api import input_file
+
+    path = input_file(tmp_path)
+    database = tmp_path / "cli.duckdb"
+    assert (
+        main(
+            [
+                str(path),
+                "--session-id",
+                "s",
+                "--database",
+                str(database),
+                "--reconstruct",
+                "--metrics",
+                "--json",
+            ]
+        )
+        == 0
+    )
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["persistence"]["new_records"] == 13
+    assert payload["reconstructed_hands"][0]["accounting_reconciled"]
+    assert any(
+        row["metric_id"] == "preflop.vpip" and row["value"] == "1"
+        for row in payload["metrics"]
+    )

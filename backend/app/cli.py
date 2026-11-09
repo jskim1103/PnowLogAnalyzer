@@ -7,8 +7,17 @@ from collections import Counter
 from dataclasses import asdict
 from pathlib import Path
 
+from pydantic import TypeAdapter
+
+from app.database.store import Store
+from app.domain.hands import Hand
+from app.domain.players import PlayerId
+from app.ingestion.hands import normalize_session
 from app.ingestion.importer import import_session
 from app.ingestion.preflop import extract_preflop_hands
+from app.reconstruction.engine import reconstruct
+from app.stats.analytics import MetricResult, compute_statistics
+from app.stats.registry import REGISTRY
 from app.stats.vpip import calculate_vpip
 
 
@@ -31,17 +40,63 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--vpip", action="store_true", help="Report per-player VPIP by game variant"
     )
+    parser.add_argument(
+        "--database", type=Path, help="Persist session in this local DuckDB"
+    )
+    parser.add_argument("--owner", help="Explicit export-owner player ID")
+    parser.add_argument(
+        "--reconstruct",
+        action="store_true",
+        help="Check all streets and chip settlement",
+    )
+    parser.add_argument(
+        "--metrics", action="store_true", help="Compute the executable metric catalog"
+    )
     args = parser.parse_args(argv)
     try:
-        report = import_session(args.files, session_id=args.session_id)
+        outcome = None
+        if args.database:
+            store = Store(args.database)
+            outcome = store.import_paths(
+                args.files, session_id=args.session_id, owner=args.owner
+            )
+            report = next(r for r in store.reports() if r.session_id == args.session_id)
+        else:
+            report = import_session(args.files, session_id=args.session_id)
+        reconstructed: tuple[Hand, ...] = ()
+        if args.reconstruct or args.metrics:
+            if args.database:
+                reconstructed = store.hands(session_id=args.session_id)
+            else:
+                reconstructed = tuple(
+                    reconstruct(h)
+                    for h in normalize_session(
+                        report, owner=PlayerId(args.owner) if args.owner else None
+                    )
+                )
+        metrics = compute_statistics(reconstructed) if args.metrics else ()
         vpip = calculate_vpip(extract_preflop_hands(report)) if args.vpip else None
     except (OSError, ValueError) as exc:
         print(f"Import failed: {exc}", file=sys.stderr)
         return 2
     if args.json:
         payload = asdict(report)
-        payload["validation_scope"] = "hand_boundaries_only"
+        payload["validation_scope"] = (
+            "reconstruction_and_accounting"
+            if args.reconstruct or args.metrics
+            else "hand_boundaries_only"
+        )
         payload["fully_validated_hands"] = 0
+        if outcome is not None:
+            payload["persistence"] = asdict(outcome)
+        if args.reconstruct or args.metrics:
+            payload["reconstructed_hands"] = TypeAdapter(tuple[Hand, ...]).dump_python(
+                reconstructed, mode="json"
+            )
+        if args.metrics:
+            payload["metrics"] = TypeAdapter(tuple[MetricResult, ...]).dump_python(
+                metrics, mode="json"
+            )
         if vpip is not None:
             payload["vpip"] = {
                 "results": [
@@ -57,6 +112,24 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(payload, ensure_ascii=False, indent=2))
     else:
         print(f"Session: {report.session_id}")
+        if outcome is not None:
+            print(
+                f"Persisted: {outcome.new_records} new records, "
+                f"{outcome.new_sources} new files"
+            )
+        if args.reconstruct or args.metrics:
+            print(
+                f"Accounting reconciled: "
+                f"{sum(h.accounting_reconciled for h in reconstructed)}"
+                f"/{len(reconstructed)}"
+            )
+            print(
+                f"Action consistent: "
+                f"{sum(h.action_consistent for h in reconstructed)}"
+                f"/{len(reconstructed)}"
+            )
+        if args.metrics:
+            print(f"Executable metrics: {len(REGISTRY)} (use --json for full results)")
         print(f"Unique records: {len(report.records)}")
         print(f"Duplicate records merged: {report.duplicate_records}")
         print(f"Players: {len(report.players)}")
@@ -102,6 +175,7 @@ def main(argv: list[str] | None = None) -> int:
         report.issues
         or report.unknown_records
         or (vpip is not None and vpip.excluded_hands)
+        or any(not h.action_consistent for h in reconstructed)
     )
     return 1 if args.strict and failed else 0
 

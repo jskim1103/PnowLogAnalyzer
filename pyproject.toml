@@ -4,16 +4,29 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pnow-log-analyzer"
-version = "0.1.0"
-description = "Typed, traceable PokerNow log ingestion"
+version = "0.2.0"
+description = "Local PokerNow reconstruction, statistics and mathematical analysis"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "duckdb>=2.0.0",
+    "fastapi>=0.162.2",
+    "pydantic>=2.14.3",
+    "python-multipart>=0.0.33",
+    "uvicorn>=0.54.0",
+]
 
 [project.scripts]
 pnow-import = "app.cli:main"
+pnow-serve = "app.api.main:serve"
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "ruff>=0.8", "mypy>=1.13"]
+dev = [
+    "pytest>=8",
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "httpx>=0.28.1",
+    "httpx2>=2.16.0",
+]
 
 [tool.setuptools.packages.find]
 where = ["backend"]
