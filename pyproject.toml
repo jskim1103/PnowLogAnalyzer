@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pnow-log-analyzer"
+version = "0.2.0"
+description = "Local PokerNow reconstruction, statistics and mathematical analysis"
+requires-python = ">=3.12"
+dependencies = [
+    "duckdb>=2.0.0",
+    "fastapi>=0.162.2",
+    "pydantic>=2.14.3",
+    "python-multipart>=0.0.33",
+    "uvicorn>=0.54.0",
+]
+
+[project.scripts]
+pnow-import = "app.cli:main"
+pnow-serve = "app.api.main:serve"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "httpx>=0.28.1",
+    "httpx2>=2.16.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["backend"]
+
+[tool.pytest.ini_options]
+pythonpath = ["backend"]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["backend"]
