@@ -1,6 +1,8 @@
 # Parser contract (provisional)
 
-The first increment implements CSV decoding and explicit player references only.
+This document records the original parsing milestones and compatibility contract.
+The full Hand adapter and reconstruction version 2 now extend these primitives;
+see `reconstruction.md` for current all-street/accounting semantics.
 PokerNow grammar stays in `app.ingestion`; `app.domain` contains source-independent
 identity values. No public interface is stable yet.
 

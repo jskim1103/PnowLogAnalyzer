@@ -78,3 +78,77 @@ The implementation is split between `ingestion/preflop.py` (source translation),
 and aggregation). Tests use synthetic hands with hand-calculated numerators and
 denominators, including blind completion, checks, walks, all-ins, repeated raises,
 folds after calls, malformed/incomplete input, and per-variant separation.
+
+## Registry analytics (version 1)
+
+`stats.registry` exposes 116 executable definitions, not planned placeholders. The
+[generated catalog](metric-catalog.md) includes numerator and denominator for each.
+`stats.analytics` consumes source-independent reconstructed Hand objects; it never
+reads PokerNow text. The API/UI can query players, sessions, variants, UTC dates,
+known positions, starting stacks in BB, and observed NLHE classes.
+
+Unlike the legacy preflop-only VPIP interface above, registry metrics conservatively
+require a consistent reconstructed hand. This intentionally excludes otherwise
+usable preflop data when later hand evidence is invalid. Reconciled accounting is
+additionally required for financial fields; known complete NLHE cards are required
+for starting-card fields. Excluded hands never enter a frequency denominator. A
+filter on a known starting class includes observed matching cards only, not inferred
+hidden holdings. Unknown-class coverage is reported in the starting-hand explorer.
+
+### Frequency conventions
+
+- Hand-based participation counts once per dealt hand, not once per action.
+- RFI requires an unopened, unlimped pot and legal raising capacity. Open-raise
+  sizing/success instead uses the first raise, including an isolation raise.
+- 3/4/5-bet opportunities require respectively one/two/three prior observed raises,
+  facing a wager, raising rights and chips beyond a call. Short raises still
+  increase the observed raise count; they do not automatically reopen raise rights.
+- Squeeze opportunities additionally require a caller of the opening raise.
+- Call-open is a first-investment decision facing one open; cold-call additionally
+  excludes blind posters. Limp responses use the limper's first decision facing
+  the initial open. Fold/call to 3-bet refer to the original opener; fold/call to
+  4-bet refer to the original 3-bettor. Later cold reraises are separate contexts.
+- ATS uses unopened CO/BTN/BTN-SB/SB opportunities with raising rights.
+  ATS and fold-to-steal conservatively exclude hands with incomplete named positions. BB fold to
+  steal uses that recorded opener context. BB/SB defense denominators are decisions
+  facing the first open, never automatically all dealt hands.
+- Immediate raise success means all opponents fold preflop, no board is dealt,
+  and that raise is the final aggression. Winning later does not count.
+- Street action frequencies use voluntary decisions on that street. AFq excludes
+  checks: `(bets + raises)/(bets + raises + calls + folds)`. AF uses calls as its
+  denominator; zero calls yields null rather than infinity. Overall AF/AFq are
+  postflop only. Check-response opportunities use the first facing-bet decision
+  after a check; raising responses additionally require raise capacity.
+- Flop c-bet opportunities belong to the preflop aggressor at their first unbet
+  decision with an opponent able to respond. A prior donk removes the opportunity.
+  Turn/river c-bets require the same qualifying aggressor to have bet each previous
+  postflop street and retained final street aggression. They are double/triple
+  barrels, not delayed c-bets. Responses stop being c-bet responses after a reraise.
+- WTSD uses flop viewers; showdown requires multiple nonfolded participants and a
+  complete river board. W$SD counts receiving any positive award, including split
+  awards, not net profitability. WWSF uses positive awards among flop viewers.
+  Voluntary post-fold card reveals do not turn a folded hand into a showdown.
+- Bet/pot means the opening bet divided by the pot before that action. Overbet means
+  that opening bet exceeds that pot. Raise sizes preserve resulting commitments.
+  Voluntary all-in frequencies require positive chips added and stack exhaustion.
+
+### Financial and reliability conventions
+
+Net chips = awards − contributions + returns. bb/100 is the sum of each eligible
+hand's net/BB divided by eligible dealt hands, multiplied by 100. Unknown stakes or
+chip-to-currency conversion never become inferred dollar results. Performance charts
+include supported reconciled results only and show exclusions. Observed peak-to-trough
+chip drawdown is descriptive, not a future-risk prediction.
+
+Values use Decimal fractions internally; the UI formats frequencies as percentages.
+Binomial frequencies report 95% Wilson intervals. Repeated decisions and sessions
+can be correlated, so these are descriptive binomial approximations, not independent
+proof of skill. Means, monetary totals and aggression-factor ratios do not receive
+fake binomial intervals. Monte Carlo equity instead uses per-player 95% Hoeffding
+bounds on bounded pot shares, including ties; exact enumeration has no sampling
+uncertainty. Weighted range priors are explicit assumptions conditioned jointly on
+card compatibility, not opponent observations or estimates derived from folds.
+
+Probability/EV models and remaining unsupported families are documented in
+`implementation-status.md`. Planned probes/floats/delayed bets, all-in EV, solver
+recommendations and bluff/value classifications are not advertised as executable.
