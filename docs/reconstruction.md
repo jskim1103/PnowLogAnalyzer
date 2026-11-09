@@ -14,7 +14,8 @@ and the VPIP API remain compatible.
    amounts. Preserve source amounts alongside reconstructed positive chip deltas.
 3. Reconstruct preflop/flop/turn/river in chronological sequence. Record pot before
    each decision, additional amount facing, capped call amount, remaining stacks,
-   active participants, previous street aggressor, raise rights and seat position.
+   active participants, previous aggressor on the current street, raise rights and
+   seat position.
 4. Track pending decisions, clockwise active-seat action order, folds, all-ins,
    minimum increases, and pot-limit caps. Short all-ins do not automatically reopen
    an actor's raise rights; cumulative increases are considered. The effective

@@ -45,6 +45,7 @@ def test_full_csv_api_storage_catalog_replay_and_analytics(tmp_path):
             assert response.status_code == 200, response.text
             assert response.json()["new_records"] == new_records
             assert response.json()["reconciled"] == 1
+            assert response.json()["warnings"] == 1  # Explicit dead button.
         assert len(client.get("/api/players").json()) == 2
         assert client.get("/api/sessions").json()[0]["hands"] == 1
         assert len(client.get("/api/catalog").json()) >= 60

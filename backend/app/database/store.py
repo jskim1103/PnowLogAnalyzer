@@ -30,6 +30,7 @@ class ImportOutcome:
     hands: int
     reconciled: int
     issues: int
+    warnings: int = 0
 
 
 class Store:
@@ -224,6 +225,7 @@ class Store:
             sum(h.accounting_reconciled for h in hands),
             len(report.issues)
             + sum(d.severity == "error" for h in hands for d in h.diagnostics),
+            sum(d.severity == "warning" for h in hands for d in h.diagnostics),
         )
 
     def rebuild(self, session_id: str) -> ImportOutcome:

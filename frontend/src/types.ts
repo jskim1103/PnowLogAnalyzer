@@ -140,4 +140,5 @@ export type ImportResult = {
   hands: number;
   reconciled: number;
   issues: number;
+  warnings: number;
 };

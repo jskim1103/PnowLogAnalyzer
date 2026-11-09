@@ -103,7 +103,7 @@ export default function Imports({
               </p>
               <p>
                 {result.reconciled}/{result.hands} hands reconciled ·{" "}
-                {result.issues} issues
+                {result.issues} errors · {result.warnings} warnings
               </p>
             </div>
           )}
